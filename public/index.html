@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ferretería - Sistema de Gestión</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- ── LOGIN ──────────────────────────── -->
+  <div id="login-container" class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon"><i class="fa-solid fa-hammer"></i></div>
+        <h1>Ferretería</h1>
+        <p>Sistema de Gestión v1.0</p>
+      </div>
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input class="form-control" type="email" id="loginEmail" required autocomplete="email"
+            placeholder="correo">
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input class="form-control" type="password" id="loginPassword" required autocomplete="current-password"
+            placeholder="••••••••">
+        </div>
+        <div id="loginError" class="alert alert-danger" style="display:none;"></div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginBtn">
+          Iniciar Sesión
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── MAIN APP ────────────────────────── -->
+  <div id="main-container" class="main-container" style="display:none;">
+    <header class="mobile-header no-print">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="mobile-logo">Ferretería</div>
+      <div class="user-avatar-sm" id="userAvatarMobile">A</div>
+    </header>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fa-solid fa-hammer"></i></div>
+        <div>
+          <h2 id="nombreNegocio">Ferretería</h2>
+          <small id="ciudadNegocio">Sistema de Gestión</small>
+        </div>
+      </div>
+      <ul class="nav-menu">
+        <li>
+          <a class="nav-item" onclick="loadPage('dashboard')" id="nav-dashboard">
+            <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span> Panel Principal
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="loadPage('ventas')" id="nav-ventas">
+            <span class="nav-icon"><i class="fa-solid fa-cart-plus"></i></span> Nueva Venta
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="loadPage('historial')" id="nav-historial">
+            <span class="nav-icon"><i class="fa-solid fa-file-lines"></i></span> Historial Ventas
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="loadPage('productos')" id="nav-productos">
+            <span class="nav-icon"><i class="fa-solid fa-box-open"></i></span> Productos
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="loadPage('inventario')" id="nav-inventario">
+            <span class="nav-icon"><i class="fa-solid fa-square-poll-vertical"></i></span> Inventario
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="loadPage('proveedores')" id="nav-proveedores">
+            <span class="nav-icon"><i class="fa-solid fa-building"></i></span> Proveedores
+          </a>
+        </li>
+        <li>
+          <a class="nav-item" onclick="loadPage('reportes')" id="nav-reportes">
+            <span class="nav-icon">📄</span> Reportes
+          </a>
+        </li>
+        <li id="nav-admin-li" style="display:none;">
+          <a class="nav-item" onclick="loadPage('admin')" id="nav-admin">
+            <span class="nav-icon">⚙️</span> Administración
+          </a>
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-details">
+            <p id="userName">Administrador</p>
+            <small id="userRol">Admin</small>
+          </div>
+        </div>
+        <button onclick="handleLogout()" class="btn btn-danger btn-sm btn-full">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Cerrar Sesión
+        </button>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="main-content">
+      <div id="page-content" class="content-area"></div>
+    </div>
+  </div>
+
+  <!-- ── MODALES GLOBALES ──────────────────── -->
+
+  <!-- Modal Producto -->
+  <div id="modalProducto" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="modalProductoTitle">Nuevo Producto</h2>
+        <button class="close-btn" onclick="closeModal('modalProducto')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="productoEditId">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código / SKU *</label>
+            <input class="form-control" id="pCodigo" placeholder="Ej: MART-001" required>
+          </div>
+          <div class="form-group">
+            <label>Unidad de Medida</label>
+            <select class="form-control" id="pUnidad">
+              <option value="Unidad">Unidad</option>
+              <option value="Metro">Metro</option>
+              <option value="Metro²">Metro²</option>
+              <option value="Kg">Kg</option>
+              <option value="Litro">Litro</option>
+              <option value="Bolsa">Bolsa</option>
+              <option value="Galón">Galón</option>
+              <option value="Rollo">Rollo</option>
+              <option value="Par">Par</option>
+              <option value="Docena">Docena</option>
+              <option value="Bulto">Bulto</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nombre del Producto *</label>
+          <input class="form-control" id="pNombre" placeholder="Ej: Martillo Carpenter 500g" required>
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea class="form-control" id="pDescripcion" rows="2" placeholder="Descripción opcional..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categoría</label>
+            <select class="form-control" id="pCategoria">
+              <option value="">Sin categoría</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Proveedor</label>
+            <select class="form-control" id="pProveedor">
+              <option value="">Sin proveedor</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>Precio Compra</label>
+            <div class="input-group">
+              <span class="input-group-prefix">$</span>
+              <input class="form-control" type="number" id="pPrecioCompra" min="0" step="1" placeholder="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Precio Venta *</label>
+            <div class="input-group">
+              <span class="input-group-prefix">$</span>
+              <input class="form-control" type="number" id="pPrecioVenta" min="0" step="1" required placeholder="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input class="form-control" type="number" id="pStockMinimo" min="0" value="5">
+          </div>
+        </div>
+        <div class="form-group" id="stockInicialGroup">
+          <label>Stock Inicial</label>
+          <input class="form-control" type="number" id="pStockInicial" min="0" value="0"
+            placeholder="Unidades en inventario">
+        </div>
+        <div id="pMargen"
+          style="font-size:13px;color:var(--success);font-weight:600;margin-top:-8px;margin-bottom:10px;display:none;">
+          Margen: <span id="pMargenValor"></span>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('modalProducto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarProducto()">💾 Guardar Producto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Proveedor -->
+  <div id="modalProveedor" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="modalProveedorTitle">Nuevo Proveedor</h2>
+        <button class="close-btn" onclick="closeModal('modalProveedor')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="proveedorEditId">
+        <div class="form-group">
+          <label>Nombre / Empresa *</label>
+          <input class="form-control" id="provNombre" required placeholder="Ej: Distribuidora La Costa">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input class="form-control" type="tel" id="provTelefono" placeholder="604 xxx xxxx">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input class="form-control" type="tel" id="provWhatsapp" placeholder="310 xxx xxxx">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contacto</label>
+            <input class="form-control" id="provContacto" placeholder="Nombre del vendedor">
+          </div>
+          <div class="form-group">
+            <label>Ciudad</label>
+            <input class="form-control" id="provCiudad" placeholder="Montería, Barranquilla...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dirección</label>
+          <input class="form-control" id="provDireccion" placeholder="Dirección opcional">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input class="form-control" type="email" id="provEmail" placeholder="correo@proveedor.com">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('modalProveedor')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarProveedor()">💾 Guardar Proveedor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ticket -->
+  <div id="modalTicket" class="modal-overlay">
+    <div class="modal-box" style="max-width:360px;">
+      <div class="modal-head">
+        <h2>✅ Venta Completada</h2>
+        <button class="close-btn" onclick="closeModal('modalTicket')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="ticketContent"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('modalTicket')">Cerrar</button>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Movimiento -->
+  <div id="modalMovimiento" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Registrar Movimiento</h2>
+        <button class="close-btn" onclick="closeModal('modalMovimiento')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="movProductoId">
+        <div class="form-group">
+          <label>Producto</label>
+          <div style="position:relative;">
+            <input class="form-control" id="movProductoBuscar" placeholder="Buscar producto..."
+              oninput="buscarProductoMov(this.value)">
+            <div id="movDropdown" class="search-dropdown"></div>
+          </div>
+          <div id="movProductoInfo"
+            style="margin-top:6px;padding:8px;background:var(--gray-100);border-radius:6px;font-size:13px;display:none;">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo *</label>
+            <select class="form-control" id="movTipo">
+              <option value="ENTRADA">📥 Entrada (Compra/Recepción)</option>
+              <option value="SALIDA">📤 Salida</option>
+              <option value="AJUSTE_POSITIVO">➕ Ajuste Positivo</option>
+              <option value="AJUSTE_NEGATIVO">➖ Ajuste Negativo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Cantidad *</label>
+            <input class="form-control" type="number" id="movCantidad" min="1" value="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Referencia</label>
+          <input class="form-control" id="movReferencia" placeholder="Ej: Factura #123, Orden compra...">
+        </div>
+        <div class="form-group">
+          <label>Notas</label>
+          <textarea class="form-control" id="movNotas" rows="2" placeholder="Observaciones opcionales..."></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('modalMovimiento')">Cancelar</button>
+        <button class="btn btn-primary" onclick="registrarMovimiento()">✅ Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Categoría -->
+  <div id="modalCategoria" class="modal-overlay">
+    <div class="modal-box" style="max-width:400px;">
+      <div class="modal-head">
+        <h2>Nueva Categoría</h2>
+        <button class="close-btn" onclick="closeModal('modalCategoria')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input class="form-control" id="catNombre" placeholder="Ej: Herramientas Manuales">
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input class="form-control" id="catDescripcion" placeholder="Descripción opcional">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('modalCategoria')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarCategoria()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Detalle Venta -->
+  <div id="modalDetalleVenta" class="modal-overlay">
+    <div class="modal-box modal-lg">
+      <div class="modal-head">
+        <h2 id="detalleVentaTitle">Detalle de Venta</h2>
+        <button class="close-btn" onclick="closeModal('modalDetalleVenta')">✕</button>
+      </div>
+      <div class="modal-body" id="detalleVentaBody"></div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary" onclick="closeModal('modalDetalleVenta')">Cerrar</button>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
