@@ -1094,7 +1094,7 @@ async function cargarAlertas() {
               Stock: <strong style="color:${p.stock < 2 ? 'var(--danger)' : 'var(--warning)'};">${p.stock}</strong><br>
               Mínimo: ${p.stock_minimo}
             </div>
-            <button class="btn btn-primary btn-sm" onclick="abrirMovParaProducto(${p.id}, '${p.nombre}')">📥 Entrada</button>
+            <button class="btn btn-primary btn-sm" onclick="abrirMovParaProducto(${p._id}, '${p.nombre}')">📥 Entrada</button>
           </div>
         </div>
       `).join('')}
@@ -1197,7 +1197,7 @@ function buscarProductoMov(q) {
   ).slice(0, 8);
 
   dropdown.innerHTML = resultados.map(p => `
-    <div class="search-item" onclick="seleccionarProductoMov(${p.id})">
+    <div class="search-item" onclick="seleccionarProductoMov(${p._id})">
       <div>
         <div class="search-item-name">${p.nombre}</div>
         <div class="search-item-sub">${p.codigo} · Stock: ${p.stock}</div>
@@ -1303,8 +1303,8 @@ function mostrarProveedores(lista) {
       <td>${p.email ? `<a href="mailto:${p.email}">${p.email}</a>` : '-'}</td>
       <td>
         <div class="action-cell">
-          <button class="btn btn-secondary btn-sm" onclick="editarProveedor(${p.id})">✏️ Editar</button>
-          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor(${p.id})">🗑</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="editarProveedor(${p._id})">✏️ Editar</button>
+          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor(${p._id})">🗑</button>` : ''}
         </div>
       </td>
     </tr>
@@ -1322,7 +1322,7 @@ function openNuevoProveedor() {
 }
 
 function editarProveedor(id) {
-  const prov = proveedoresCache.find(p => p.id === id);
+  const prov = proveedoresCache.find(p => p._id === id);
   if (!prov) return;
   document.getElementById('proveedorEditId').value = id;
   document.getElementById('modalProveedorTitle').textContent = 'Editar Proveedor';
@@ -1364,7 +1364,7 @@ async function guardarProveedor() {
 }
 
 async function eliminarProveedor(id) {
-  const prov = proveedoresCache.find(p => p.id === id);
+  const prov = proveedoresCache.find(p => p._id === id);
   if (!confirm(`¿Eliminar "${prov?.nombre}"?`)) return;
   const res = await api(`/proveedores/${id}`, { method: 'DELETE' });
   const data = await res.json();
