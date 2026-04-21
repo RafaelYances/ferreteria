@@ -927,9 +927,9 @@ function openNuevoProducto() {
 
 function llenarSelectsProducto() {
   document.getElementById('pCategoria').innerHTML = '<option value="">Sin categoría</option>' +
-    categoriasCache.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    categoriasCache.map(c => `<option value="${c._id}">${c.nombre}</option>`).join('');
   document.getElementById('pProveedor').innerHTML = '<option value="">Sin proveedor</option>' +
-    proveedoresCache.map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+    proveedoresCache.map(p => `<option value="${p._id}">${p.nombre}</option>`).join('');
 }
 
 function calcularMargenProducto() {
@@ -947,7 +947,7 @@ function calcularMargenProducto() {
 }
 
 async function editarProducto(id) {
-  const prod = productosCache.find(p => p.id === id);
+  const prod = productosCache.find(p => p._id === id);
   if (!prod) return;
   llenarSelectsProducto();
   document.getElementById('productoEditId').value = id;
