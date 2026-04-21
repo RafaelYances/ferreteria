@@ -1058,17 +1058,6 @@ app.delete('/api/usuarios/:id', authMiddleware, adminOnly, async (req, res) => {
 // ─── INICIAR SERVIDOR ───────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`
-╔══════════════════════════════════════════════╗
-║   🔧 FERRETERÍA - SISTEMA DE GESTIÓN v2.0   ║
-║                                              ║
-║   🚀 http://localhost:${PORT}${' '.repeat(PORT.toString().length === 4 ? 26 : 25)}║
-║                                              ║
-║   📧 Email:      admin@ferreteria.com        ║
-║   🔐 Contraseña: admin123                    ║
-║                                              ║
-║   💾 Base de datos: MongoDB                  ║
-╚══════════════════════════════════════════════╝
-  `);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor listo en puerto ${PORT}`);
 });
