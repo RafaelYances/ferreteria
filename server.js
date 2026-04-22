@@ -544,7 +544,7 @@ app.post('/api/ventas', authMiddleware, async (req, res) => {
       });
     }
 
-    res.json({ message: 'Venta registrada', venta });
+    res.json({ message: 'Venta registrada', venta: venta, numero_venta: venta.numero_venta});
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -688,12 +688,7 @@ app.post('/api/movimientos', authMiddleware, async (req, res) => {
 
 console.log('✓ Parte 2 de rutas cargada');
 
-// CONTINUACIÓN DE SERVER.JS - PARTE 3
-// Copia esto después de las rutas de movimientos de inventario
-
 // ─── RUTAS DE DASHBOARD ──────────────────────────────────────────────────────
-
-// ─── RUTAS DE DASHBOARD CORREGIDAS ──────────────────────────────────────────
 
 app.get('/api/dashboard', authMiddleware, async (req, res) => {
   try {
@@ -747,7 +742,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
       {
         $group: {
           _id: '$producto',
-          nombre: { $first: '$nombre_producto' },
+          nombre: { $first: '$prod.nombre' },
           vendidos: { $sum: '$cantidad' },
           ingresos: { $sum: '$subtotal' }
         }
