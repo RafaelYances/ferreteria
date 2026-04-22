@@ -448,7 +448,7 @@ function buscarProductoPOS(q) {
   }
 
   dropdown.innerHTML = resultados.map(p => `
-    <div class="search-item" onclick="agregarItemVenta(${p.id})">
+    <div class="search-item" onclick="agregarItemVenta('${p._id}')">
       <div>
         <div class="search-item-name">${p.nombre}</div>
         <div class="search-item-sub">
@@ -469,7 +469,7 @@ function agregarItemVenta(productoId) {
   document.getElementById('posDropdown').classList.remove('open');
   document.getElementById('posSearch').value = '';
 
-  const prod = productosCache.find(p => p.id === productoId);
+  const prod = productosCache.find(p => p._id === productoId);
   if (!prod) return;
   if (prod.stock <= 0) { toast('Producto sin stock disponible', 'error'); return; }
 
@@ -479,7 +479,7 @@ function agregarItemVenta(productoId) {
     existe.cantidad++;
   } else {
     ventaItems.push({
-      producto_id: prod.id,
+      producto_id: prod._id,
       nombre: prod.nombre,
       codigo: prod.codigo,
       precio_unitario: prod.precio_venta,
@@ -606,7 +606,9 @@ async function completarVenta() {
 
   const payload = {
     cliente: document.getElementById('ventaCliente')?.value?.trim() || 'Mostrador',
+    subtotal: subtotal,
     descuento: ventaDescuento,
+    total: total,
     metodo_pago: ventaMetodoPago,
     detalles: ventaItems.map(i => ({
       producto_id: i.producto_id,
