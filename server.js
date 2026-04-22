@@ -13,7 +13,6 @@ const bodyParser = require('body-parser');
 const path = require('path');
 
 // ─── INICIALIZACIÓN ─────────────────────────────────────────────────────────
-// ─── INICIALIZACIÓN ─────────────────────────────────────────────────────────
 const app = express();
 
 // Si existe en .env usa esa, si no, usa la frase de seguridad por defecto
@@ -119,7 +118,7 @@ const detalleVentaSchema = new mongoose.Schema({
 
 const movimientoInventarioSchema = new mongoose.Schema({
   producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
-  tipo: { type: String, enum: ['ENTRADA', 'VENTA', 'AJUSTE', 'DEVOLUCIÓN'], required: true },
+  tipo: { type: String, enum: ['ENTRADA', 'VENTA', 'AJUSTE'], required: true },
   cantidad: { type: Number, required: true },
   referencia: String,
   notas: String,
@@ -242,51 +241,32 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign(
       { id: user._id, rol: user.rol },
       SECRET_KEY,
-      { expiresIn: '24h' }
+      { expiresIn: '7d' }
     );
 
     res.json({
       token,
-      user: {
-        id: user._id,
-        nombre: user.nombre,
-        email: user.email,
-        rol: user.rol
-      }
+      user: { _id: user._id, nombre: user.nombre, email: user.email, rol: user.rol }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ─── RUTAS DE PRODUCTOS ─────────────────────────────────────────────────────
+// ─── RUTAS DE PRODUCTOS ──────────────────────────────────────────────────────
 
-// Obtener todos los productos con búsqueda
 app.get('/api/productos', authMiddleware, async (req, res) => {
   try {
-    let query = Producto.find({ activo: true })
-      .populate('categoria')
-      .populate('proveedor');
-
-    // Búsqueda por código o nombre
-    const { search, categoria_id } = req.query;
-    if (search) {
-      query = query.regex('nombre', search, 'i').or([
-        { codigo: { $regex: search, $options: 'i' } }
-      ]);
-    }
-    if (categoria_id) {
-      query = query.where('categoria').equals(categoria_id);
-    }
-
-    const productos = await query.sort({ nombre: 1 });
+    const productos = await Producto.find({ activo: true })
+      .populate('categoria', 'nombre')
+      .populate('proveedor', 'nombre')
+      .select('codigo nombre descripcion categoria unidad_medida precio_compra precio_venta stock stock_minimo proveedor');
     res.json(productos);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// Obtener un producto
 app.get('/api/productos/:id', authMiddleware, async (req, res) => {
   try {
     const producto = await Producto.findById(req.params.id)
@@ -299,150 +279,76 @@ app.get('/api/productos/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Crear producto
 app.post('/api/productos', authMiddleware, async (req, res) => {
   try {
-    const { codigo, nombre, descripcion, categoria_id, unidad_medida, precio_compra, precio_venta, stock, stock_minimo, proveedor_id } = req.body;
+    const { codigo, nombre, precio_venta, categoria, proveedor, stock } = req.body;
+    
+    if (!codigo || !nombre || !precio_venta) {
+      return res.status(400).json({ error: 'Campos requeridos faltantes' });
+    }
 
     const producto = new Producto({
-      codigo,
-      nombre,
-      descripcion,
-      categoria: categoria_id,
-      unidad_medida,
-      precio_compra,
-      precio_venta,
-      stock,
-      stock_minimo,
-      proveedor: proveedor_id
+      ...req.body,
+      stock: stock || 0
     });
-
+    
     await producto.save();
-
-    // Registrar movimiento de entrada
-    await MovimientoInventario.create({
-      producto: producto._id,
-      tipo: 'ENTRADA',
-      cantidad: stock || 0,
-      referencia: 'Stock inicial',
-      usuario: req.userId
-    });
-
-    res.json({ message: 'Producto creado', producto });
+    res.json(producto);
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ error: 'El código de producto ya existe' });
+      return res.status(400).json({ error: 'Código de producto duplicado' });
     }
     res.status(400).json({ error: err.message });
   }
 });
 
-// Actualizar producto
 app.put('/api/productos/:id', authMiddleware, async (req, res) => {
   try {
-    const { nombre, descripcion, categoria_id, unidad_medida, precio_compra, precio_venta, stock_minimo, proveedor_id } = req.body;
-
     const producto = await Producto.findByIdAndUpdate(
       req.params.id,
-      {
-        nombre,
-        descripcion,
-        categoria: categoria_id,
-        unidad_medida,
-        precio_compra,
-        precio_venta,
-        stock_minimo,
-        proveedor: proveedor_id
-      },
+      req.body,
       { new: true }
     ).populate('categoria').populate('proveedor');
-
+    
+    if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(producto);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// Eliminar producto (soft delete)
-app.delete('/api/productos/:id', authMiddleware, async (req, res) => {
-  try {
-    await Producto.findByIdAndUpdate(req.params.id, { activo: false });
-    res.json({ message: 'Producto eliminado' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-console.log('✓ Parte 1 de rutas cargada');
-
-// CONTINUACIÓN DE SERVER.JS - PARTE 2
-// Copia esto después de las rutas de productos
-
-// ─── RUTAS DE CATEGORÍAS ────────────────────────────────────────────────────
+// ─── RUTAS DE CATEGORÍAS ─────────────────────────────────────────────────────
 
 app.get('/api/categorias', authMiddleware, async (req, res) => {
   try {
-    const categorias = await Categoria.find({ activo: true }).sort({ nombre: 1 });
-    
-    // Contar productos por categoría
-    const categorias_with_count = await Promise.all(
-      categorias.map(async (cat) => {
-        const count = await Producto.countDocuments({ categoria: cat._id, activo: true });
-        return {
-          ...cat.toObject(),
-          total_productos: count
-        };
-      })
-    );
-
-    res.json(categorias_with_count);
+    const categorias = await Categoria.find({ activo: true });
+    res.json(categorias);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.post('/api/categorias', authMiddleware, async (req, res) => {
+app.post('/api/categorias', authMiddleware, adminOnly, async (req, res) => {
   try {
-    const { nombre, descripcion } = req.body;
-    const categoria = new Categoria({ nombre: nombre.trim(), descripcion });
+    const { nombre } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
+
+    const categoria = new Categoria(req.body);
     await categoria.save();
-    res.json({ message: 'Categoría creada', categoria });
+    res.json(categoria);
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ error: 'Ya existe una categoría con ese nombre' });
+      return res.status(400).json({ error: 'Categoría duplicada' });
     }
     res.status(400).json({ error: err.message });
   }
 });
 
-app.put('/api/categorias/:id', authMiddleware, async (req, res) => {
-  try {
-    const { nombre, descripcion } = req.body;
-    const categoria = await Categoria.findByIdAndUpdate(
-      req.params.id,
-      { nombre, descripcion },
-      { new: true }
-    );
-    res.json(categoria);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete('/api/categorias/:id', authMiddleware, async (req, res) => {
-  try {
-    await Categoria.findByIdAndUpdate(req.params.id, { activo: false });
-    res.json({ message: 'Categoría eliminada' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// ─── RUTAS DE PROVEEDORES ───────────────────────────────────────────────────
+// ─── RUTAS DE PROVEEDORES ────────────────────────────────────────────────────
 
 app.get('/api/proveedores', authMiddleware, async (req, res) => {
   try {
-    const proveedores = await Proveedor.find({ activo: true }).sort({ nombre: 1 });
+    const proveedores = await Proveedor.find({ activo: true });
     res.json(proveedores);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -451,18 +357,12 @@ app.get('/api/proveedores', authMiddleware, async (req, res) => {
 
 app.post('/api/proveedores', authMiddleware, async (req, res) => {
   try {
-    const { nombre, telefono, whatsapp, email, contacto, direccion, ciudad } = req.body;
-    const proveedor = new Proveedor({
-      nombre,
-      telefono,
-      whatsapp,
-      email,
-      contacto,
-      direccion,
-      ciudad
-    });
+    const { nombre } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
+
+    const proveedor = new Proveedor(req.body);
     await proveedor.save();
-    res.json({ message: 'Proveedor creado', proveedor });
+    res.json(proveedor);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -470,22 +370,13 @@ app.post('/api/proveedores', authMiddleware, async (req, res) => {
 
 app.put('/api/proveedores/:id', authMiddleware, async (req, res) => {
   try {
-    const { nombre, telefono, whatsapp, email, contacto, direccion, ciudad } = req.body;
     const proveedor = await Proveedor.findByIdAndUpdate(
       req.params.id,
-      { nombre, telefono, whatsapp, email, contacto, direccion, ciudad },
+      req.body,
       { new: true }
     );
+    if (!proveedor) return res.status(404).json({ error: 'Proveedor no encontrado' });
     res.json(proveedor);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-app.delete('/api/proveedores/:id', authMiddleware, async (req, res) => {
-  try {
-    await Proveedor.findByIdAndUpdate(req.params.id, { activo: false });
-    res.json({ message: 'Proveedor eliminado' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -495,52 +386,55 @@ app.delete('/api/proveedores/:id', authMiddleware, async (req, res) => {
 
 app.post('/api/ventas', authMiddleware, async (req, res) => {
   try {
-    const { numero_venta, cliente, detalles, subtotal, descuento, total, metodo_pago, notas } = req.body;
+    const { cliente, subtotal, descuento, total, metodo_pago, detalles } = req.body;
+    
+    // Generar número de venta
+    const lastVenta = await Venta.findOne().sort({ createdAt: -1 });
+    const numero_venta = lastVenta 
+      ? 'V' + (parseInt(lastVenta.numero_venta.substring(1)) + 1).toString().padStart(6, '0')
+      : 'V000001';
 
-    // Crear venta
     const venta = new Venta({
       numero_venta,
-      cliente,
+      cliente: cliente || 'Mostrador',
       usuario: req.userId,
       subtotal,
       descuento,
       total,
-      metodo_pago,
-      notas,
-      estado: 'completada'
+      metodo_pago
     });
 
     await venta.save();
 
-    // Crear detalles y actualizar stock
-    for (const detalle of detalles) {
-      const detalleVenta = new DetalleVenta({
+    // Guardar detalles y actualizar stock
+    for (const det of detalles) {
+      const detalle = new DetalleVenta({
         venta: venta._id,
-        producto: detalle.producto_id,
-        nombre_producto: detalle.nombre_producto,
-        cantidad: detalle.cantidad,
-        precio_unitario: detalle.precio_unitario,
-        subtotal: detalle.subtotal
+        producto: det.producto_id,
+        nombre_producto: det.nombre_producto,
+        cantidad: det.cantidad,
+        precio_unitario: det.precio_unitario,
+        subtotal: det.subtotal
       });
-      await detalleVenta.save();
+      await detalle.save();
 
-      // Actualizar stock
+      // Restar del stock
       await Producto.findByIdAndUpdate(
-        detalle.producto_id,
-        { $inc: { stock: -detalle.cantidad } }
+        det.producto_id,
+        { $inc: { stock: -det.cantidad } }
       );
 
-      // Registrar movimiento de inventario
+      // Registrar movimiento
       await MovimientoInventario.create({
-        producto: detalle.producto_id,
+        producto: det.producto_id,
         tipo: 'VENTA',
-        cantidad: detalle.cantidad,
+        cantidad: det.cantidad,
         referencia: numero_venta,
         usuario: req.userId
       });
     }
 
-    res.json({ message: 'Venta registrada', venta });
+    res.json(venta);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -548,29 +442,9 @@ app.post('/api/ventas', authMiddleware, async (req, res) => {
 
 app.get('/api/ventas', authMiddleware, async (req, res) => {
   try {
-    const { fecha_inicio, fecha_fin, estado } = req.query;
-    
-    let query = Venta.find()
+    const ventas = await Venta.find()
       .populate('usuario', 'nombre')
       .sort({ createdAt: -1 });
-
-    if (fecha_inicio || fecha_fin) {
-      const dateFilter = {};
-      if (fecha_inicio) dateFilter.$gte = new Date(fecha_inicio);
-      if (fecha_fin) {
-        const ff = new Date(fecha_fin);
-        ff.setHours(23, 59, 59, 999);
-        dateFilter.$lte = ff;
-      }
-      query = query.where('createdAt').gte(dateFilter.$gte || new Date(0));
-      if (dateFilter.$lte) query = query.lte(dateFilter.$lte);
-    }
-
-    if (estado) {
-      query = query.where('estado').equals(estado);
-    }
-
-    const ventas = await query.limit(100);
     res.json(ventas);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -579,85 +453,27 @@ app.get('/api/ventas', authMiddleware, async (req, res) => {
 
 app.get('/api/ventas/:id', authMiddleware, async (req, res) => {
   try {
-    const venta = await Venta.findById(req.params.id).populate('usuario', 'nombre');
-    const detalles = await DetalleVenta.find({ venta: req.params.id }).populate('producto');
+    const venta = await Venta.findById(req.params.id)
+      .populate('usuario', 'nombre');
+    if (!venta) return res.status(404).json({ error: 'Venta no encontrada' });
     
+    const detalles = await DetalleVenta.find({ venta: req.params.id });
     res.json({ ...venta.toObject(), detalles });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.delete('/api/ventas/:id', authMiddleware, async (req, res) => {
-  try {
-    const venta = await Venta.findById(req.params.id);
-    const detalles = await DetalleVenta.find({ venta: req.params.id });
-
-    // Revertir stock
-    for (const detalle of detalles) {
-      await Producto.findByIdAndUpdate(
-        detalle.producto,
-        { $inc: { stock: detalle.cantidad } }
-      );
-    }
-
-    // Marcar venta como anulada
-    await Venta.findByIdAndUpdate(req.params.id, { estado: 'anulada' });
-    res.json({ message: 'Venta anulada' });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// ─── RUTAS DE MOVIMIENTOS DE INVENTARIO ──────────────────────────────────────
-
-app.get('/api/movimientos', authMiddleware, async (req, res) => {
-  try {
-    const { producto_id, tipo } = req.query;
-    
-    let query = MovimientoInventario.find()
-      .populate('producto', 'codigo nombre')
-      .populate('usuario', 'nombre')
-      .sort({ createdAt: -1 });
-
-    if (producto_id) {
-      query = query.where('producto').equals(producto_id);
-    }
-    if (tipo) {
-      query = query.where('tipo').equals(tipo);
-    }
-
-    const movimientos = await query.limit(200);
-    res.json(movimientos);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+// ─── RUTAS DE MOVIMIENTOS ────────────────────────────────────────────────────
 
 app.post('/api/movimientos', authMiddleware, async (req, res) => {
   try {
     const { producto_id, tipo, cantidad, referencia, notas } = req.body;
-
-    // Validar stock para salidas
-    if ((tipo === 'SALIDA' || tipo === 'AJUSTE_NEGATIVO')) {
-      const prod = await Producto.findById(producto_id);
-      if (!prod || prod.stock < cantidad) {
-        return res.status(400).json({ 
-          error: `Stock insuficiente. Disponible: ${prod?.stock || 0}` 
-        });
-      }
+    
+    if (!producto_id || !tipo || !cantidad) {
+      return res.status(400).json({ error: 'Campos requeridos faltantes' });
     }
 
-    // Calcular cambio de stock
-    const cambio = (tipo === 'ENTRADA' || tipo === 'AJUSTE_POSITIVO') ? cantidad : -cantidad;
-
-    // Actualizar stock
-    await Producto.findByIdAndUpdate(
-      producto_id,
-      { $inc: { stock: cambio } }
-    );
-
-    // Crear movimiento
     const movimiento = new MovimientoInventario({
       producto: producto_id,
       tipo,
@@ -669,147 +485,112 @@ app.post('/api/movimientos', authMiddleware, async (req, res) => {
 
     await movimiento.save();
 
-    // Obtener nuevo stock
-    const prod = await Producto.findById(producto_id);
+    // Actualizar stock según tipo
+    if (tipo === 'ENTRADA') {
+      await Producto.findByIdAndUpdate(producto_id, { $inc: { stock: cantidad } });
+    } else if (tipo === 'AJUSTE') {
+      await Producto.findByIdAndUpdate(producto_id, { $inc: { stock: cantidad } });
+    }
 
-    res.json({ 
-      message: 'Movimiento registrado',
-      movimiento,
-      nuevo_stock: prod.stock
+    res.json(movimiento);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ─── RUTAS DE DASHBOARD ──────────────────────────────────────────────────────
+
+app.get('/api/dashboard', authMiddleware, async (req, res) => {
+  try {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const manana = new Date(hoy);
+    manana.setDate(manana.getDate() + 1);
+
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59);
+
+    const [
+      total_productos,
+      ventasHoy,
+      ventasMes,
+      productosBajoStock,
+      ventasRecientes,
+      topProductos,
+      alertasStock
+    ] = await Promise.all([
+      Producto.countDocuments({ activo: true }),
+      Venta.aggregate([
+        { $match: { createdAt: { $gte: hoy, $lt: manana }, estado: { $ne: 'anulada' } } },
+        { $group: { _id: null, total: { $sum: '$total' }, cantidad: { $sum: 1 } } }
+      ]),
+      Venta.aggregate([
+        { $match: { createdAt: { $gte: inicioMes, $lte: finMes }, estado: { $ne: 'anulada' } } },
+        { $group: { _id: null, total: { $sum: '$total' }, cantidad: { $sum: 1 } } }
+      ]),
+      Producto.countDocuments({ stock: { $lte: 5 }, activo: true }),
+      Venta.find({ createdAt: { $gte: hoy, $lt: manana } }).sort({ createdAt: -1 }).limit(5),
+      DetalleVenta.aggregate([
+        { $lookup: { from: 'ventas', localField: 'venta', foreignField: '_id', as: 'venta' } },
+        { $unwind: '$venta' },
+        { $match: { 'venta.createdAt': { $gte: hoy, $lt: manana } } },
+        { $group: { _id: '$producto', vendidos: { $sum: '$cantidad' } } },
+        { $sort: { vendidos: -1 } },
+        { $limit: 5 }
+      ]),
+      Producto.find({ stock: { $lte: 5 }, activo: true }).limit(5)
+    ]);
+
+    // Enriquecer top productos con datos de producto
+    const topProductosEnriquecidos = await Promise.all(topProductos.map(async tp => {
+      const prod = await Producto.findById(tp._id).select('nombre codigo stock');
+      return { ...tp, nombre: prod?.nombre, codigo: prod?.codigo, stock: prod?.stock };
+    }));
+
+    res.json({
+      total_productos,
+      ventas_hoy: ventasHoy[0] || { total: 0, cantidad: 0 },
+      ventas_mes: ventasMes[0] || { total: 0, cantidad: 0 },
+      productos_bajo_stock: productosBajoStock,
+      ventas_recientes: ventasRecientes,
+      top_productos: topProductosEnriquecidos,
+      alertas_stock: alertasStock
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-console.log('✓ Parte 2 de rutas cargada');
+// ─── RUTAS DE REPORTES ───────────────────────────────────────────────────────
 
-// CONTINUACIÓN DE SERVER.JS - PARTE 3
-// Copia esto después de las rutas de movimientos de inventario
-
-// ─── RUTAS DE DASHBOARD ──────────────────────────────────────────────────────
-
-// ─── RUTAS DE DASHBOARD CORREGIDAS ──────────────────────────────────────────
-
-app.get('/api/dashboard', authMiddleware, async (req, res) => {
-  try {
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    
-    const inicioMes = new Date();
-    inicioMes.setDate(1);
-    inicioMes.setHours(0, 0, 0, 0);
-    
-    const inicioSemana = new Date();
-    inicioSemana.setDate(inicioSemana.getDate() - 7);
-    inicioSemana.setHours(0, 0, 0, 0);
-
-    // Totales generales
-    const totalProductos = await Producto.countDocuments({ activo: true });
-    const totalStock = await Producto.aggregate([
-      { $match: { activo: true } },
-      { $group: { _id: null, total: { $sum: '$stock' } } }
-    ]);
-
-    // Ventas por período
-    const ventasHoy = await Venta.aggregate([
-      { $match: { createdAt: { $gte: hoy }, estado: { $ne: 'anulada' } } },
-      { $group: { _id: null, cnt: { $sum: 1 }, total: { $sum: '$total' } } }
-    ]);
-
-    const ventasMes = await Venta.aggregate([
-      { $match: { createdAt: { $gte: inicioMes }, estado: { $ne: 'anulada' } } },
-      { $group: { _id: null, cnt: { $sum: 1 }, total: { $sum: '$total' } } }
-    ]);
-
-    // CORRECCIÓN 1: Productos bajo stock (Uso de $expr para comparar campos)
-    const bajoStock = await Producto.countDocuments({ 
-      activo: true,
-      $expr: { $lte: ["$stock", "$stock_minimo"] }
-    });
-
-    // Productos más vendidos
-    const topProductos = await DetalleVenta.aggregate([
-      {
-        $lookup: {
-          from: 'productos',
-          localField: 'producto',
-          foreignField: '_id',
-          as: 'prod'
-        }
-      },
-      { $unwind: '$prod' },
-      { $match: { 'prod.activo': true } },
-      {
-        $group: {
-          _id: '$producto',
-          nombre: { $first: '$nombre_producto' },
-          vendidos: { $sum: '$cantidad' },
-          ingresos: { $sum: '$subtotal' }
-        }
-      },
-      { $sort: { vendidos: -1 } },
-      { $limit: 8 }
-    ]);
-
-    // CORRECCIÓN 2: Alertas de stock bajo
-    const alertas = await Producto.find({ 
-      activo: true,
-      $expr: { $lte: ["$stock", "$stock_minimo"] }
-    }).select('codigo nombre stock stock_minimo').limit(10);
-
-    // Ventas recientes
-    const ventasRecientes = await Venta.find()
-      .populate('usuario', 'nombre')
-      .sort({ createdAt: -1 })
-      .limit(5);
-
-    res.json({
-      total_productos: totalProductos,
-      total_stock: totalStock[0]?.total || 0,
-      ventas_hoy: { 
-        cantidad: ventasHoy[0]?.cnt || 0, 
-        total: ventasHoy[0]?.total || 0 
-      },
-      ventas_mes: { 
-        cantidad: ventasMes[0]?.cnt || 0, 
-        total: ventasMes[0]?.total || 0 
-      },
-      productos_bajo_stock: bajoStock,
-      top_productos: topProductos,
-      alertas_stock: alertas,
-      ventas_recientes: ventasRecientes
-    });
-  } catch (err) {
-    console.error("Error en Dashboard:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── RUTAS DE REPORTES ──────────────────────────────────────────────────────
-
-app.get('/api/reportes/ventas-por-dia', authMiddleware, async (req, res) => {
+app.get('/api/reportes/ventas-dia', authMiddleware, async (req, res) => {
   try {
     const { fecha_inicio, fecha_fin } = req.query;
-    const fi = fecha_inicio ? new Date(fecha_inicio) : new Date(Date.now() - 29 * 86400000);
-    const ff = fecha_fin ? new Date(fecha_fin) : new Date();
-    ff.setHours(23, 59, 59, 999);
+    
+    const matchStage = { estado: { $ne: 'anulada' } };
+    if (fecha_inicio || fecha_fin) {
+      matchStage.createdAt = {};
+      if (fecha_inicio) matchStage.createdAt.$gte = new Date(fecha_inicio);
+      if (fecha_fin) {
+        const ff = new Date(fecha_fin);
+        ff.setHours(23, 59, 59, 999);
+        matchStage.createdAt.$lte = ff;
+      }
+    }
 
     const reportes = await Venta.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: fi, $lte: ff },
-          estado: { $ne: 'anulada' }
-        }
-      },
+      { $match: matchStage },
       {
         $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-          num_ventas: { $sum: 1 },
-          total: { $sum: '$total' }
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+          },
+          total: { $sum: '$total' },
+          num_ventas: { $sum: 1 }
         }
       },
-      { $sort: { _id: -1 } }
+      { $sort: { '_id': -1 } },
+      { $project: { dia: '$_id', total: 1, num_ventas: 1, _id: 0 } }
     ]);
 
     res.json(reportes);
