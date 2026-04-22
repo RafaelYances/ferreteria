@@ -998,7 +998,7 @@ async function guardarProducto() {
   const data = await res.json();
 
   if (res.ok) {
-    toast(data.mensaje, 'success');
+    toast(data.message, 'success');
     closeModal('modalProducto');
     document.getElementById('pCodigo').disabled = false;
     await cargarProductosCache();
@@ -1014,7 +1014,7 @@ async function eliminarProducto(id) {
   const res = await api(`/productos/${id}`, { method: 'DELETE' });
   const data = await res.json();
   if (res.ok) {
-    toast(data.mensaje, 'success');
+    toast(data.message, 'success');
     await cargarProductosCache();
     filtrarProductos();
   } else {
@@ -1354,7 +1354,7 @@ async function guardarProveedor() {
   const res = await api(url, { method, body: payload });
   const data = await res.json();
   if (res.ok) {
-    toast(data.mensaje, 'success');
+    toast(data.message, 'success');
     closeModal('modalProveedor');
     await cargarProveedoresCache();
     mostrarProveedores(proveedoresCache);
@@ -1369,7 +1369,7 @@ async function eliminarProveedor(id) {
   const res = await api(`/proveedores/${id}`, { method: 'DELETE' });
   const data = await res.json();
   if (res.ok) {
-    toast(data.mensaje, 'success');
+    toast(data.message, 'success');
     await cargarProveedoresCache();
     mostrarProveedores(proveedoresCache);
   } else {
