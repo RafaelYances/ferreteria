@@ -896,8 +896,8 @@ function filtrarProductos() {
         <td>${margen !== '-' ? `<span style="color:${margen > 20 ? 'var(--success)' : 'var(--warning)'};">${margen}%</span>` : '-'}</td>
         <td>
           <div class="action-cell">
-            <button class="btn btn-secondary btn-sm" onclick="editarProducto(${p._id})"> Editar</button>
-            ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProducto(${p._id})"></button>` : ''}
+            <button class="btn btn-secondary btn-sm" onclick="editarProducto('${p._id}')"> Editar</button>
+            ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p._id}')">🗑️</button>` : ''}
           </div>
         </td>
       </tr>
@@ -956,8 +956,8 @@ async function editarProducto(id) {
   document.getElementById('pCodigo').disabled = true;
   document.getElementById('pNombre').value = prod.nombre;
   document.getElementById('pDescripcion').value = prod.descripcion || '';
-  document.getElementById('pCategoria').value = prod.categoria_id || '';
-  document.getElementById('pProveedor').value = prod.proveedor_id || '';
+  document.getElementById('pCategoria').value = prod.categoria?._id || prod.categoria || '';
+  document.getElementById('pProveedor').value = prod.proveedor?._id || prod.p;
   document.getElementById('pUnidad').value = prod.unidad_medida || 'Unidad';
   document.getElementById('pPrecioCompra').value = prod.precio_compra || '';
   document.getElementById('pPrecioVenta').value = prod.precio_venta;
@@ -976,8 +976,8 @@ async function guardarProducto() {
     codigo: document.getElementById('pCodigo').value.trim().toUpperCase(),
     nombre: document.getElementById('pNombre').value.trim(),
     descripcion: document.getElementById('pDescripcion').value.trim(),
-    categoria_id: document.getElementById('pCategoria').value || null,
-    proveedor_id: document.getElementById('pProveedor').value || null,
+    categoria: document.getElementById('pCategoria').value || null,
+    proveedor: document.getElementById('pProveedor').value || null,
     unidad_medida: document.getElementById('pUnidad').value,
     precio_compra: parseFloat(document.getElementById('pPrecioCompra').value) || 0,
     precio_venta: parseFloat(document.getElementById('pPrecioVenta').value) || 0,
@@ -1197,7 +1197,7 @@ function buscarProductoMov(q) {
   ).slice(0, 8);
 
   dropdown.innerHTML = resultados.map(p => `
-    <div class="search-item" onclick="seleccionarProductoMov(${p._id})">
+    <div class="search-item" onclick="seleccionarProductoMov('${p._id}')">
       <div>
         <div class="search-item-name">${p.nombre}</div>
         <div class="search-item-sub">${p.codigo} · Stock: ${p.stock}</div>
@@ -1208,7 +1208,7 @@ function buscarProductoMov(q) {
 }
 
 function seleccionarProductoMov(id) {
-  const prod = productosCache.find(p => p.id === id);
+  const prod = productosCache.find(p => p._id === id);
   if (!prod) return;
   document.getElementById('movProductoId').value = id;
   document.getElementById('movProductoBuscar').value = prod.nombre;
@@ -1223,7 +1223,7 @@ function abrirMovParaProducto(id, nombre) {
   document.getElementById('movProductoId').value = id;
   document.getElementById('movProductoBuscar').value = nombre;
   document.getElementById('movTipo').value = 'ENTRADA';
-  const prod = productosCache.find(p => p.id === id);
+  const prod = productosCache.find(p => p._id === id);
   if (prod) {
     const infoEl = document.getElementById('movProductoInfo');
     infoEl.textContent = `Stock actual: ${prod.stock} ${prod.unidad_medida || ''}`;
@@ -1303,8 +1303,8 @@ function mostrarProveedores(lista) {
       <td>${p.email ? `<a href="mailto:${p.email}">${p.email}</a>` : '-'}</td>
       <td>
         <div class="action-cell">
-          <button class="btn btn-secondary btn-sm" onclick="editarProveedor(${p._id})">Editar</button>
-          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor(${p._id})"></button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="editarProveedor('${p._id}')">Editar</button>
+          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor('${p._id}')">🗑️</button>` : ''}
         </div>
       </td>
     </tr>
