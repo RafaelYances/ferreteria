@@ -612,6 +612,7 @@ async function completarVenta() {
     metodo_pago: ventaMetodoPago,
     detalles: ventaItems.map(i => ({
       producto_id: i.producto_id,
+      nombre_producto: i.nombre, // CAMBIO: Enviar nombre para el historial
       cantidad: i.cantidad,
       precio_unitario: i.precio_unitario,
       subtotal: i.cantidad * i.precio_unitario
@@ -620,17 +621,19 @@ async function completarVenta() {
 
   try {
     const res = await api('/ventas', { method: 'POST', body: payload });
-    const data = await res.json();
+    
+    // CAMBIO CLAVE: Solo llamamos a res.json() UNA VEZ
+    const data = await res.json(); 
+
     if (res.ok) {
-      const ventaData = await res.json();
-      // Actualizar cache de productos
       await cargarProductosCache();
-      // Mostrar ticket
-      mostrarTicket(ventaData.venta || ventaData, payload, total);
-      // Reset venta
+      
+      mostrarTicket(data.venta, payload, total);
+      
       ventaItems = [];
       ventaDescuento = 0;
-      document.getElementById('ventaCliente').value = '';
+      if(document.getElementById('posDescuento')) document.getElementById('posDescuento').value = 0;
+      if(document.getElementById('ventaCliente')) document.getElementById('ventaCliente').value = '';
       if(document.getElementById('efectivoRecibido')) document.getElementById('efectivoRecibido').value = '';
       actualizarUIVenta();
        
@@ -640,8 +643,9 @@ async function completarVenta() {
       btn.disabled = false;
       btn.textContent = '✅ Completar Venta';
     }
-  } catch {
-    toast('Error de conexión', 'error');
+  } catch (err) {
+    console.error(err);
+    toast('Error de conexión con el servidor', 'error');
     btn.disabled = false;
     btn.textContent = '✅ Completar Venta';
   }
