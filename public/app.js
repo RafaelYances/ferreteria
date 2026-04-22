@@ -949,8 +949,8 @@ async function editarProducto(productoId) {
   document.getElementById('pNombre').value = prod.nombre;
   document.getElementById('pDescripcion').value = prod.descripcion || '';
   document.getElementById('pUnidad').value = prod.unidad_medida || 'Unidad';
-  document.getElementById('pCategoria').value = prod.categoria?._id || '';
-  document.getElementById('pProveedor').value = prod.proveedor?._id || '';
+  document.getElementById('pCategoria').value = prod.categoria?._id || prod.categoria || '';
+  document.getElementById('pProveedor').value = prod.proveedor?._id || prod.proveedor || '';
   document.getElementById('pPrecioCompra').value = prod.precio_compra || '';
   document.getElementById('pPrecioVenta').value = prod.precio_venta || '';
   document.getElementById('pStockMinimo').value = prod.stock_minimo || '5';
