@@ -886,7 +886,7 @@ function filtrarProductos() {
       <tr>
         <td><span class="td-code">${p.codigo}</span></td>
         <td><strong>${p.nombre}</strong>${p.descripcion ? `<br><small style="color:var(--gray-500);">${p.descripcion.substring(0,40)}</small>` : ''}</td>
-        <td>${p.categoria?.nombre || '<span style="color:var(--gray-400)">Sin categoría</span>'}</td>
+        <td>${(p.categoria && p.categoria.nombre) ? p.categoria.nombre : '<span style="color:var(--gray-400)">Sin categoría</span>'}</td>
         <td>
           <span class="badge ${stockClass}">${p.stock} ${p.unidad_medida || ''}</span>
           <small style="color:var(--gray-400);display:block;font-size:11px;">mín: ${p.stock_minimo}</small>
@@ -957,7 +957,7 @@ async function editarProducto(id) {
   document.getElementById('pNombre').value = prod.nombre;
   document.getElementById('pDescripcion').value = prod.descripcion || '';
   document.getElementById('pCategoria').value = prod.categoria?._id || prod.categoria || '';
-  document.getElementById('pProveedor').value = prod.proveedor?._id || prod.p;
+  document.getElementById('pProveedor').value = prod.proveedor?._id || prod.proveedor || '';
   document.getElementById('pUnidad').value = prod.unidad_medida || 'Unidad';
   document.getElementById('pPrecioCompra').value = prod.precio_compra || '';
   document.getElementById('pPrecioVenta').value = prod.precio_venta;
@@ -998,7 +998,7 @@ async function guardarProducto() {
   const data = await res.json();
 
   if (res.ok) {
-    toast(data.message, 'success');
+    toast(data.message || 'Operación exitosa', 'success');
     closeModal('modalProducto');
     document.getElementById('pCodigo').disabled = false;
     await cargarProductosCache();
