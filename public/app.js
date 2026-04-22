@@ -886,7 +886,7 @@ function filtrarProductos() {
       <tr>
         <td><span class="td-code">${p.codigo}</span></td>
         <td><strong>${p.nombre}</strong>${p.descripcion ? `<br><small style="color:var(--gray-500);">${p.descripcion.substring(0,40)}</small>` : ''}</td>
-        <td>${p.categoria_nombre || '<span style="color:var(--gray-400)">Sin categoría</span>'}</td>
+        <td>${p.categoria?.nombre || '<span style="color:var(--gray-400)">Sin categoría</span>'}</td>
         <td>
           <span class="badge ${stockClass}">${p.stock} ${p.unidad_medida || ''}</span>
           <small style="color:var(--gray-400);display:block;font-size:11px;">mín: ${p.stock_minimo}</small>
@@ -897,7 +897,7 @@ function filtrarProductos() {
         <td>
           <div class="action-cell">
             <button class="btn btn-secondary btn-sm" onclick="editarProducto('${p._id}')"> Editar</button>
-            ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p._id}')">🗑️</button>` : ''}
+            ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProducto('${p._id}')">Eliminar</button>` : ''}
           </div>
         </td>
       </tr>
@@ -1298,13 +1298,13 @@ function mostrarProveedores(lista) {
       <td><strong>${p.nombre}</strong></td>
       <td>${p.contacto || '-'}</td>
       <td>${p.telefono || '-'}</td>
-      <td>${p.whatsapp ? `<a href="https://wa.me/57${p.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:var(--success);">📱 ${p.whatsapp}</a>` : '-'}</td>
+      <td>${p.whatsapp ? `<a href="https://wa.me/57${p.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:var(--success);"> ${p.whatsapp}</a>` : '-'}</td>
       <td>${p.ciudad || '-'}</td>
       <td>${p.email ? `<a href="mailto:${p.email}">${p.email}</a>` : '-'}</td>
       <td>
         <div class="action-cell">
           <button class="btn btn-secondary btn-sm" onclick="editarProveedor('${p._id}')">Editar</button>
-          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor('${p._id}')">🗑️</button>` : ''}
+          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor('${p._id}')">Eliminar</button>` : ''}
         </div>
       </td>
     </tr>
