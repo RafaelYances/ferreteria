@@ -613,7 +613,8 @@ async function completarVenta() {
     detalles: ventaItems.map(i => ({
       producto_id: i.producto_id,
       cantidad: i.cantidad,
-      precio_unitario: i.precio_unitario
+      precio_unitario: i.precio_unitario,
+      subtotal: i.cantidad * i.precio_unitario
     }))
   };
 
