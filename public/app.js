@@ -868,7 +868,8 @@ function filtrarProductos() {
 
   let filtrados = productosCache.filter(p => {
     const coincideTexto = p.nombre.toLowerCase().includes(buscar) || p.codigo.toLowerCase().includes(buscar);
-    const coincideCat = !cat || p.categoria_id == cat;
+    const pCatId = p.categoria?._id || p.categoria;
+    const coincideCat = !cat || pCatId == cat;
     const coincideStock = !stock || (stock === 'bajo' && p.stock <= p.stock_minimo);
     return coincideTexto && coincideCat && coincideStock;
   });
@@ -976,8 +977,8 @@ async function guardarProducto() {
     codigo: document.getElementById('pCodigo').value.trim().toUpperCase(),
     nombre: document.getElementById('pNombre').value.trim(),
     descripcion: document.getElementById('pDescripcion').value.trim(),
-    categoria: document.getElementById('pCategoria').value || null,
-    proveedor: document.getElementById('pProveedor').value || null,
+    categoria_id: document.getElementById('pCategoria').value || null,
+    proveedor_id: document.getElementById('pProveedor').value || null,
     unidad_medida: document.getElementById('pUnidad').value,
     precio_compra: parseFloat(document.getElementById('pPrecioCompra').value) || 0,
     precio_venta: parseFloat(document.getElementById('pPrecioVenta').value) || 0,
