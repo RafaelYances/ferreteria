@@ -2443,7 +2443,7 @@ function filtrarProductos() {
       <tr>
         <td><span class="td-code">${p.codigo}</span></td>
         <td><strong>${p.nombre}</strong>${p.descripcion ? `<br><small style="color:var(--gray-500);">${p.descripcion.substring(0,40)}</small>` : ''}</td>
-        <td>${(p.categoria && p.categoria.nombre) ? p.categoria.nombre : '<span style="color:var(--gray-400)">Sin categoría</span>'}</td>
+        <td>${p.categoria?.nombre || '<span style="color:var(--gray-400)">Sin categoría</span>'}</td>
         <td>
           <span class="badge ${stockClass}">${p.stock} ${p.unidad_medida || ''}</span>
           <small style="color:var(--gray-400);display:block;font-size:11px;">mín: ${p.stock_minimo}</small>
