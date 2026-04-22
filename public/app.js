@@ -622,14 +622,18 @@ async function completarVenta() {
     const res = await api('/ventas', { method: 'POST', body: payload });
     const data = await res.json();
     if (res.ok) {
+      const ventaData = await res.json();
       // Actualizar cache de productos
       await cargarProductosCache();
       // Mostrar ticket
-      mostrarTicket(data, payload, total);
+      mostrarTicket(ventaData.venta || ventaData, payload, total);
       // Reset venta
       ventaItems = [];
-      actualizarUIVenta();
+      ventaDescuento = 0;
       document.getElementById('ventaCliente').value = '';
+      if(document.getElementById('efectivoRecibido')) document.getElementById('efectivoRecibido').value = '';
+      actualizarUIVenta();
+       
       toast('Venta registrada exitosamente', 'success');
     } else {
       toast(data.error || 'Error registrando venta', 'error');
@@ -655,8 +659,8 @@ function mostrarTicket(data, payload, total) {
     <div class="ticket">
       <div class="ticket-title">${negocio}</div>
       ${ciudad ? `<div class="ticket-sub">${ciudad}</div>` : ''}
-      ${tel ? `<div class="ticket-sub">Tel: ${tel}</div>` : ''}
       ${nit ? `<div class="ticket-sub">NIT: ${nit}</div>` : ''}
+      ${tel ? `<div class="ticket-sub">Tel: ${tel}</div>` : ''}
       <div class="ticket-divider"></div>
       <div class="ticket-row"><span>Venta:</span><span>${data.numero_venta}</span></div>
       <div class="ticket-row"><span>Fecha:</span><span>${fecha}</span></div>
@@ -751,7 +755,7 @@ async function cargarHistorial() {
   tbody.innerHTML = ventas.length ? ventas.map(v => `
     <tr>
       <td><span class="td-code">${v.numero_venta}</span></td>
-      <td>${new Date(v.fecha).toLocaleString('es-CO', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${new Date(v.createdAt).toLocaleString('es-CO', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
       <td>${v.cliente}</td>
       <td><span class="badge badge-info">${v.metodo_pago || 'efectivo'}</span></td>
       <td><strong>${fmt(v.total)}</strong></td>
@@ -759,7 +763,7 @@ async function cargarHistorial() {
       <td>${v.vendedor || '-'}</td>
       <td>
         <div class="action-cell">
-          <button class="btn btn-secondary btn-sm" onclick="verDetalleVenta(${v.id}, '${v.numero_venta}')">👁 Ver</button>
+          <button class="btn btn-secondary btn-sm" onclick="verDetalleVenta('${v._id}', '${v.numero_venta}')">👁 Ver</button>
           ${currentUser.rol === 'admin' && v.estado !== 'anulada' ? `<button class="btn btn-danger btn-sm" onclick="anularVenta(${v.id})">✕ Anular</button>` : ''}
         </div>
       </td>
@@ -1119,8 +1123,8 @@ async function cargarMovimientos() {
       <tbody>
         ${movs.length ? movs.map(m => `
           <tr>
-            <td>${new Date(m.fecha).toLocaleString('es-CO', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
-            <td><strong>${m.producto_nombre}</strong><br><span class="td-code">${m.codigo}</span></td>
+            <td>${new Date(m.createdAt).toLocaleString('es-CO', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+            <td><strong>${m.producto?.nombre || 'Sin nombre'}</strong><br><span class="td-code">${m.producto?.codigo || '-'}</span></td>
             <td>
               <span class="badge ${m.tipo === 'ENTRADA' || m.tipo === 'AJUSTE_POSITIVO' ? 'badge-success' : m.tipo === 'VENTA' ? 'badge-info' : 'badge-danger'}">
                 ${m.tipo}
