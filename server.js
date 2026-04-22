@@ -375,9 +375,6 @@ app.delete('/api/productos/:id', authMiddleware, async (req, res) => {
 
 console.log('✓ Parte 1 de rutas cargada');
 
-// CONTINUACIÓN DE SERVER.JS - PARTE 2
-// Copia esto después de las rutas de productos
-
 // ─── RUTAS DE CATEGORÍAS ────────────────────────────────────────────────────
 
 app.get('/api/categorias', authMiddleware, async (req, res) => {
@@ -495,12 +492,19 @@ app.delete('/api/proveedores/:id', authMiddleware, async (req, res) => {
 
 app.post('/api/ventas', authMiddleware, async (req, res) => {
   try {
-    const { numero_venta, cliente, detalles, subtotal, descuento, total, metodo_pago, notas } = req.body;
+    const { cliente, detalles, subtotal, descuento, total, metodo_pago, notas } = req.body;
 
+    const lastVenta = await Venta.findOne().sort({ createdAt: -1 });
+    let numero_venta = 'V000001';
+    if (lastVenta && lastVenta.numero_venta) {
+        const lastNum = parseInt(lastVenta.numero_venta.substring(1));
+        numero_venta = 'V' + (lastNum + 1).toString().padStart(6, '0');
+    }
+    
     // Crear venta
     const venta = new Venta({
       numero_venta,
-      cliente,
+      cliente: cliente || 'Mostrador',
       usuario: req.userId,
       subtotal,
       descuento,
