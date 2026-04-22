@@ -896,8 +896,8 @@ function filtrarProductos() {
         <td>${margen !== '-' ? `<span style="color:${margen > 20 ? 'var(--success)' : 'var(--warning)'};">${margen}%</span>` : '-'}</td>
         <td>
           <div class="action-cell">
-            <button class="btn btn-secondary btn-sm" onclick="editarProducto(${p.id})">✏️ Editar</button>
-            ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProducto(${p.id})">🗑</button>` : ''}
+            <button class="btn btn-secondary btn-sm" onclick="editarProducto(${p._id})"> Editar</button>
+            ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProducto(${p._id})"></button>` : ''}
           </div>
         </td>
       </tr>
@@ -1009,7 +1009,7 @@ async function guardarProducto() {
 }
 
 async function eliminarProducto(id) {
-  const prod = productosCache.find(p => p.id === id);
+  const prod = productosCache.find(p => p._id === id);
   if (!confirm(`¿Eliminar "${prod?.nombre}"?`)) return;
   const res = await api(`/productos/${id}`, { method: 'DELETE' });
   const data = await res.json();
@@ -1303,8 +1303,8 @@ function mostrarProveedores(lista) {
       <td>${p.email ? `<a href="mailto:${p.email}">${p.email}</a>` : '-'}</td>
       <td>
         <div class="action-cell">
-          <button class="btn btn-secondary btn-sm" onclick="editarProveedor(${p._id})">✏️ Editar</button>
-          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor(${p._id})">🗑</button>` : ''}
+          <button class="btn btn-secondary btn-sm" onclick="editarProveedor(${p._id})">Editar</button>
+          ${currentUser.rol === 'admin' ? `<button class="btn btn-danger btn-sm" onclick="eliminarProveedor(${p._id})"></button>` : ''}
         </div>
       </td>
     </tr>
